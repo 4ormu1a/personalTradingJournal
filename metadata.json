@@ -1,0 +1,6 @@
+{
+  "name": "Institutional XAUUSD Guardian & Journal",
+  "description": "Precision Gold (XAUUSD) 100oz risk engine, prop firm drawdown guardian, multi-leg scaling planner, and behavioral execution journal.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
