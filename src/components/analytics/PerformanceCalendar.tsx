@@ -693,15 +693,23 @@ export const PerformanceCalendar: React.FC<PerformanceCalendarProps> = ({
                           <span
                             className={
                               day.isCurrentMonth
-                                ? 'text-slate-700 dark:text-slate-300'
-                                : 'text-slate-400 dark:text-slate-600'
+                                ? 'text-slate-900 dark:text-white font-extrabold'
+                                : 'text-slate-400 dark:text-slate-600 font-medium'
                             }
                           >
                             {day.dayNum}
                           </span>
 
                           {hasTrades && (
-                            <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-slate-900/60 text-slate-200 dark:bg-black/40">
+                            <span
+                              className={`text-[10px] px-2 py-0.5 rounded-full font-bold tracking-tight shadow-xs border ${
+                                isPositive
+                                  ? 'bg-emerald-950 text-emerald-100 border-emerald-400/50 dark:bg-emerald-950/90 dark:text-emerald-200 dark:border-emerald-400/50'
+                                  : isNegative
+                                  ? 'bg-rose-950 text-rose-100 border-rose-400/50 dark:bg-rose-950/90 dark:text-rose-200 dark:border-rose-400/50'
+                                  : 'bg-slate-800 text-slate-100 border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:border-slate-700'
+                              }`}
+                            >
                               {day.tradesCount} {day.tradesCount === 1 ? 'Trade' : 'Trades'}
                             </span>
                           )}
@@ -713,17 +721,17 @@ export const PerformanceCalendar: React.FC<PerformanceCalendarProps> = ({
                             <span
                               className={`text-sm sm:text-base font-extrabold font-mono-num block leading-tight ${
                                 isPositive
-                                  ? 'text-emerald-700 dark:text-emerald-300'
+                                  ? 'text-emerald-800 dark:text-emerald-200'
                                   : isNegative
-                                  ? 'text-rose-700 dark:text-rose-300'
-                                  : 'text-slate-700 dark:text-slate-300'
+                                  ? 'text-rose-800 dark:text-rose-200'
+                                  : 'text-slate-900 dark:text-slate-100'
                               }`}
                             >
                               {renderDayMetric(day)}
                             </span>
 
                             {/* Secondary Line */}
-                            <span className="text-[10px] text-slate-600 dark:text-slate-300 font-mono-num font-semibold block mt-0.5">
+                            <span className="text-[10px] text-slate-700 dark:text-slate-200 font-mono-num font-bold block mt-0.5">
                               {selectedMetric === 'pnl' ? (
                                 `${day.netR >= 0 ? '+' : ''}${day.netR.toFixed(2)}R • ${day.totalLots}L`
                               ) : selectedMetric === 'r_multiple' ? (
@@ -735,7 +743,7 @@ export const PerformanceCalendar: React.FC<PerformanceCalendarProps> = ({
                           </div>
                         ) : (
                           <div className="my-auto text-center">
-                            <span className="text-[11px] text-slate-400 dark:text-slate-700 font-mono-num font-medium">
+                            <span className="text-[11px] text-slate-400 dark:text-slate-600 font-mono-num font-medium">
                               —
                             </span>
                           </div>
@@ -751,15 +759,15 @@ export const PerformanceCalendar: React.FC<PerformanceCalendarProps> = ({
                                   tag === 'REVENGE'
                                     ? 'bg-rose-600 text-white'
                                     : tag.includes('BUY') || tag.includes('BULL') || tag === 'S/R'
-                                    ? 'bg-emerald-500/20 text-emerald-800 dark:text-emerald-300 border border-emerald-500/30'
-                                    : 'bg-cyan-500/20 text-cyan-800 dark:text-cyan-300 border border-cyan-500/30'
+                                    ? 'bg-emerald-500/25 text-emerald-900 dark:text-emerald-100 border border-emerald-400/50'
+                                    : 'bg-cyan-500/25 text-cyan-900 dark:text-cyan-100 border border-cyan-400/50'
                                 }`}
                               >
                                 {tag}
                               </span>
                             ))}
                             {day.tags.length > 2 && (
-                              <span className="px-1 py-0.2 rounded text-[9px] font-bold text-slate-500 dark:text-slate-400 bg-slate-200/60 dark:bg-slate-800/80">
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-extrabold text-slate-800 dark:text-slate-100 bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700">
                                 +{day.tags.length - 2} more
                               </span>
                             )}
