@@ -266,13 +266,13 @@ export const TriageInbox: React.FC = () => {
                     onClick={() => setHasTrendline(!hasTrendline)}
                     className={`p-3 rounded-lg border text-left transition-all ${
                       hasTrendline
-                        ? 'bg-blue-500/20 border-blue-500 text-blue-300'
-                        : 'bg-[#141a27] border-[#222c40] text-slate-400'
+                        ? 'bg-amber-500/15 border-amber-500/60 text-amber-300 ring-1 ring-amber-500/30'
+                        : 'bg-[#141a27] border-[#222c40] text-slate-400 hover:text-slate-200'
                     }`}
                   >
                     <div className="flex items-center justify-between font-bold text-xs">
                       <span>Trendline Touch</span>
-                      {hasTrendline && <CheckCircle className="w-3.5 h-3.5" />}
+                      {hasTrendline && <CheckCircle className="w-3.5 h-3.5 text-amber-400" />}
                     </div>
                   </button>
 
@@ -281,13 +281,13 @@ export const TriageInbox: React.FC = () => {
                     onClick={() => setHasPattern(!hasPattern)}
                     className={`p-3 rounded-lg border text-left transition-all ${
                       hasPattern
-                        ? 'bg-purple-500/20 border-purple-500 text-purple-300'
-                        : 'bg-[#141a27] border-[#222c40] text-slate-400'
+                        ? 'bg-amber-500/15 border-amber-500/60 text-amber-300 ring-1 ring-amber-500/30'
+                        : 'bg-[#141a27] border-[#222c40] text-slate-400 hover:text-slate-200'
                     }`}
                   >
                     <div className="flex items-center justify-between font-bold text-xs">
                       <span>Chart Pattern</span>
-                      {hasPattern && <CheckCircle className="w-3.5 h-3.5" />}
+                      {hasPattern && <CheckCircle className="w-3.5 h-3.5 text-amber-400" />}
                     </div>
                   </button>
 
@@ -296,13 +296,13 @@ export const TriageInbox: React.FC = () => {
                     onClick={() => setHasFib(!hasFib)}
                     className={`p-3 rounded-lg border text-left transition-all ${
                       hasFib
-                        ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
-                        : 'bg-[#141a27] border-[#222c40] text-slate-400'
+                        ? 'bg-amber-500/15 border-amber-500/60 text-amber-300 ring-1 ring-amber-500/30'
+                        : 'bg-[#141a27] border-[#222c40] text-slate-400 hover:text-slate-200'
                     }`}
                   >
                     <div className="flex items-center justify-between font-bold text-xs">
                       <span>Fibonacci</span>
-                      {hasFib && <CheckCircle className="w-3.5 h-3.5" />}
+                      {hasFib && <CheckCircle className="w-3.5 h-3.5 text-amber-400" />}
                     </div>
                   </button>
                 </div>

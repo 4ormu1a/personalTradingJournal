@@ -8,6 +8,8 @@ import {
   calculateMin1RTakeProfit,
   checkLotConsistency,
   calculateGoldCashMove,
+  validateStopLossDirection,
+  validateTakeProfitDirection,
   GOLD_PIP_VALUE,
   sanitizeNumberInput,
   toNum,
@@ -25,6 +27,7 @@ import {
   Image as ImageIcon,
   CheckCircle,
   AlertCircle,
+  AlertTriangle,
   HelpCircle,
   Clock,
   Split,
@@ -152,9 +155,36 @@ export const SizingPlanner: React.FC = () => {
     }
   };
 
-  // Mathematical lot size calculation
-  const computedLotSize = calculateGoldLotSize(numEntryPrice, numStopLossPrice, numRiskCash);
+  // Mathematical lot size calculation with directional validation
+  const computedLotSize = calculateGoldLotSize(numEntryPrice, numStopLossPrice, numRiskCash, direction);
   const calculatedLots = computedLotSize.lots;
+
+  // Directional validity checks
+  const slValidation = validateStopLossDirection(direction, numEntryPrice, numStopLossPrice);
+  const tpValidation = validateTakeProfitDirection(direction, numEntryPrice, numTakeProfitPrice);
+
+  // Quick-fix helpers for inverted price levels
+  const handleFlipStopLoss = () => {
+    if (numEntryPrice <= 0 || numStopLossPrice <= 0) return;
+    const distance = Math.abs(numEntryPrice - numStopLossPrice);
+    const flippedSl =
+      direction === 'BUY'
+        ? Math.round((numEntryPrice - distance) * 100) / 100
+        : Math.round((numEntryPrice + distance) * 100) / 100;
+    setStopLossPrice(flippedSl);
+    setSubmissionError(null);
+  };
+
+  const handleFlipTakeProfit = () => {
+    if (numEntryPrice <= 0 || numTakeProfitPrice <= 0) return;
+    const distance = Math.abs(numTakeProfitPrice - numEntryPrice);
+    const flippedTp =
+      direction === 'BUY'
+        ? Math.round((numEntryPrice + distance) * 100) / 100
+        : Math.round((numEntryPrice - distance) * 100) / 100;
+    setTakeProfitPrice(flippedTp);
+    setSubmissionError(null);
+  };
 
   // Consistency rule check
   const consistency = checkLotConsistency(trades, calculatedLots);
@@ -219,6 +249,7 @@ export const SizingPlanner: React.FC = () => {
   const [chartUrl, setChartUrl] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [screenshotPreview, setScreenshotPreview] = useState<string>('');
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   // Handle direct screenshot upload or Ctrl+V paste
   const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -249,8 +280,25 @@ export const SizingPlanner: React.FC = () => {
   };
 
   const handleSendToActiveManager = () => {
+    setSubmissionError(null);
+
+    if (numEntryPrice <= 0) {
+      setSubmissionError('Entry price must be greater than zero.');
+      return;
+    }
+
+    if (!slValidation.isValid) {
+      setSubmissionError(slValidation.error);
+      return;
+    }
+
+    if (numTakeProfitPrice > 0 && !tpValidation.isValid) {
+      setSubmissionError(tpValidation.error);
+      return;
+    }
+
     if (calculatedLots <= 0) {
-      alert('Cannot create trade with 0 lots. Check your SL distance and cash risk.');
+      setSubmissionError('Cannot create trade with 0 lots. Check your SL distance and cash risk.');
       return;
     }
 
@@ -370,9 +418,9 @@ export const SizingPlanner: React.FC = () => {
                     value={entryPrice}
                     onChange={(e) => handleEntryChange(e.target.value)}
                     placeholder="0.00"
-                    className="w-full bg-[#161d2b] border border-[#232f48] focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-slate-100 rounded-lg px-3 py-2 text-sm font-mono-num font-semibold outline-none transition-colors placeholder:text-slate-600"
+                    className="w-full bg-[#161d2b] border border-[#232f48] focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-slate-100 rounded-lg pl-3 pr-16 py-2 text-sm font-mono-num font-semibold outline-none transition-colors placeholder:text-slate-600"
                   />
-                  <span className="absolute right-2.5 top-2.5 text-[11px] text-slate-500 font-mono-num">
+                  <span className="absolute right-8 top-1/2 -translate-y-1/2 text-[11px] text-slate-500 font-mono-num pointer-events-none select-none">
                     USD
                   </span>
                 </div>
@@ -391,12 +439,31 @@ export const SizingPlanner: React.FC = () => {
                     value={stopLossPrice}
                     onChange={(e) => handleStopLossChange(e.target.value)}
                     placeholder="0.00"
-                    className="w-full bg-[#161d2b] border border-[#232f48] focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-slate-100 rounded-lg px-3 py-2 text-sm font-mono-num font-semibold outline-none transition-colors placeholder:text-slate-600"
+                    className={`w-full bg-[#161d2b] border ${
+                      numStopLossPrice > 0 && !slValidation.isValid
+                        ? 'border-red-500 focus:border-red-400 focus:ring-1 focus:ring-red-400/30'
+                        : 'border-[#232f48] focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30'
+                    } text-slate-100 rounded-lg pl-3 pr-16 py-2 text-sm font-mono-num font-semibold outline-none transition-colors placeholder:text-slate-600`}
                   />
-                  <span className="absolute right-2.5 top-2.5 text-[11px] text-slate-500 font-mono-num">
+                  <span className="absolute right-8 top-1/2 -translate-y-1/2 text-[11px] text-slate-500 font-mono-num pointer-events-none select-none">
                     USD
                   </span>
                 </div>
+                {numStopLossPrice > 0 && !slValidation.isValid && (
+                  <div className="flex items-center justify-between text-[11px] text-red-400 font-medium pt-1">
+                    <span className="flex items-center gap-1">
+                      <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                      <span>{direction === 'BUY' ? 'Must be < Entry' : 'Must be > Entry'}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleFlipStopLoss}
+                      className="text-[10px] px-2 py-0.5 rounded bg-red-500/20 text-red-300 hover:bg-red-500/30 font-semibold transition-colors"
+                    >
+                      Flip to ${direction === 'BUY' ? (numEntryPrice - Math.abs(numEntryPrice - numStopLossPrice)).toFixed(2) : (numEntryPrice + Math.abs(numEntryPrice - numStopLossPrice)).toFixed(2)}
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Dual Stop Loss: Pip Distance */}
@@ -414,9 +481,9 @@ export const SizingPlanner: React.FC = () => {
                     value={pipDistance}
                     onChange={(e) => handlePipDistanceChange(e.target.value)}
                     placeholder="0"
-                    className="w-full bg-[#161d2b] border border-[#232f48] focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-slate-100 rounded-lg px-3 py-2 text-sm font-mono-num font-semibold outline-none transition-colors placeholder:text-slate-600"
+                    className="w-full bg-[#161d2b] border border-[#232f48] focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-slate-100 rounded-lg pl-3 pr-16 py-2 text-sm font-mono-num font-semibold outline-none transition-colors placeholder:text-slate-600"
                   />
-                  <span className="absolute right-2.5 top-2.5 text-[11px] text-slate-500 font-mono-num">
+                  <span className="absolute right-8 top-1/2 -translate-y-1/2 text-[11px] text-slate-500 font-mono-num pointer-events-none select-none">
                     pips
                   </span>
                 </div>
@@ -440,12 +507,31 @@ export const SizingPlanner: React.FC = () => {
                     value={takeProfitPrice}
                     onChange={(e) => handleTakeProfitChange(e.target.value)}
                     placeholder="0.00"
-                    className="w-full bg-[#161d2b] border border-[#232f48] focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-slate-100 rounded-lg px-3 py-2 text-sm font-mono-num font-semibold outline-none transition-colors placeholder:text-slate-600"
+                    className={`w-full bg-[#161d2b] border ${
+                      numTakeProfitPrice > 0 && !tpValidation.isValid
+                        ? 'border-red-500 focus:border-red-400 focus:ring-1 focus:ring-red-400/30'
+                        : 'border-[#232f48] focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30'
+                    } text-slate-100 rounded-lg pl-3 pr-16 py-2 text-sm font-mono-num font-semibold outline-none transition-colors placeholder:text-slate-600`}
                   />
-                  <span className="absolute right-2.5 top-2.5 text-[11px] text-slate-500 font-mono-num">
+                  <span className="absolute right-8 top-1/2 -translate-y-1/2 text-[11px] text-slate-500 font-mono-num pointer-events-none select-none">
                     USD
                   </span>
                 </div>
+                {numTakeProfitPrice > 0 && !tpValidation.isValid && (
+                  <div className="flex items-center justify-between text-[11px] text-red-400 font-medium pt-1">
+                    <span className="flex items-center gap-1">
+                      <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                      <span>{direction === 'BUY' ? 'Must be > Entry' : 'Must be < Entry'}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleFlipTakeProfit}
+                      className="text-[10px] px-2 py-0.5 rounded bg-red-500/20 text-red-300 hover:bg-red-500/30 font-semibold transition-colors"
+                    >
+                      Flip TP
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* Risk % Input */}
@@ -466,9 +552,9 @@ export const SizingPlanner: React.FC = () => {
                     value={riskPercent}
                     onChange={(e) => handleRiskPercentChange(e.target.value)}
                     placeholder="0.0"
-                    className="w-full bg-[#161d2b] border border-[#232f48] focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-slate-100 rounded-lg px-3 py-2 text-sm font-mono-num font-semibold outline-none transition-colors placeholder:text-slate-600"
+                    className="w-full bg-[#161d2b] border border-[#232f48] focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-slate-100 rounded-lg pl-3 pr-14 py-2 text-sm font-mono-num font-semibold outline-none transition-colors placeholder:text-slate-600"
                   />
-                  <span className="absolute right-2.5 top-2.5 text-[11px] text-slate-500 font-mono-num">
+                  <span className="absolute right-8 top-1/2 -translate-y-1/2 text-[11px] text-slate-500 font-mono-num pointer-events-none select-none">
                     %
                   </span>
                 </div>
@@ -487,9 +573,9 @@ export const SizingPlanner: React.FC = () => {
                     value={riskCash}
                     onChange={(e) => handleRiskCashChange(e.target.value)}
                     placeholder="0.00"
-                    className="w-full bg-[#161d2b] border border-[#232f48] focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-slate-100 rounded-lg px-3 py-2 text-sm font-mono-num font-semibold outline-none transition-colors placeholder:text-slate-600"
+                    className="w-full bg-[#161d2b] border border-[#232f48] focus:border-amber-400 focus:ring-1 focus:ring-amber-400/30 text-slate-100 rounded-lg pl-3 pr-16 py-2 text-sm font-mono-num font-semibold outline-none transition-colors placeholder:text-slate-600"
                   />
-                  <span className="absolute right-2.5 top-2.5 text-[11px] text-slate-500 font-mono-num">
+                  <span className="absolute right-8 top-1/2 -translate-y-1/2 text-[11px] text-slate-500 font-mono-num pointer-events-none select-none">
                     USD
                   </span>
                 </div>
@@ -503,7 +589,7 @@ export const SizingPlanner: React.FC = () => {
                   Computed Contract Size (100 oz / Lot)
                 </span>
                 <div className="flex items-baseline gap-2 mt-1">
-                  <span className="text-3xl font-extrabold text-amber-700 dark:text-amber-300 font-mono-num">
+                  <span className={`text-3xl font-extrabold font-mono-num ${!slValidation.isValid ? 'text-red-500' : 'text-amber-700 dark:text-amber-300'}`}>
                     {calculatedLots.toFixed(2)}
                   </span>
                   <span className="text-sm font-semibold text-slate-800 dark:text-slate-300">Lots</span>
@@ -534,6 +620,37 @@ export const SizingPlanner: React.FC = () => {
               </div>
             </div>
 
+            {/* Directional Stop Loss Error Warning */}
+            {numStopLossPrice > 0 && !slValidation.isValid && (
+              <div className="mt-3 p-3.5 rounded-xl bg-red-50 dark:bg-red-950/60 border border-red-300 dark:border-red-500/50 flex flex-wrap items-center justify-between gap-3 text-xs text-red-800 dark:text-red-200">
+                <div className="flex items-start gap-2.5">
+                  <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block text-red-700 dark:text-red-300 font-bold">
+                      Inverted Stop-Loss Order Blocked
+                    </strong>
+                    <span>{slValidation.error}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleDirectionChange(direction === 'BUY' ? 'SELL' : 'BUY')}
+                    className="px-2.5 py-1 rounded bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold border border-slate-300 dark:border-slate-700 transition-colors"
+                  >
+                    Switch to {direction === 'BUY' ? 'SELL' : 'BUY'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleFlipStopLoss}
+                    className="px-3 py-1 rounded bg-red-600 hover:bg-red-500 text-white text-xs font-bold transition-colors shadow"
+                  >
+                    Auto-Fix Stop Loss
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Consistency & Prop Rule Warnings */}
             {!consistency.isConsistent && isProp && (
               <div className="mt-3 p-2.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-500/40 flex items-center gap-2 text-xs text-red-800 dark:text-red-300">
@@ -546,11 +663,18 @@ export const SizingPlanner: React.FC = () => {
           </div>
 
           {/* Card: Strategy Confluences & Candlestick Checklist */}
-          <div className="bg-[#0f141e] border border-[#1f283d] rounded-xl p-5 shadow-xl space-y-4">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              Pre-Execution Technical Confluences & Verification
-            </span>
+          <div className="bg-[#0f141e] border border-[#232f48] rounded-xl p-5 shadow-xl shadow-black/30 ring-1 ring-white/5 space-y-4.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+                <span className="p-1 rounded-md bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20">
+                  <Sparkles className="w-3.5 h-3.5" />
+                </span>
+                Pre-Execution Technical Confluences & Verification
+              </span>
+              <span className="text-[10px] font-mono-num font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 shadow-xs tracking-wide">
+                Institutional Quality Check
+              </span>
+            </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {/* S/R */}
@@ -559,8 +683,8 @@ export const SizingPlanner: React.FC = () => {
                 onClick={() => setHasSr(!hasSr)}
                 className={`p-3 rounded-lg border text-left transition-all ${
                   hasSr
-                    ? 'bg-amber-500/15 border-amber-500/50 text-amber-300'
-                    : 'bg-[#141a27] border-[#222c40] text-slate-400 hover:text-slate-300'
+                    ? 'bg-amber-500/15 border-amber-500/60 text-amber-300 ring-1 ring-amber-500/30 shadow-sm shadow-amber-500/10'
+                    : 'bg-[#141a27] border-[#222c40] text-slate-400 hover:text-slate-200 hover:border-slate-600'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -576,8 +700,8 @@ export const SizingPlanner: React.FC = () => {
                 onClick={() => setHasTrendline(!hasTrendline)}
                 className={`p-3 rounded-lg border text-left transition-all ${
                   hasTrendline
-                    ? 'bg-amber-500/15 border-amber-500/50 text-amber-300'
-                    : 'bg-[#141a27] border-[#222c40] text-slate-400 hover:text-slate-300'
+                    ? 'bg-amber-500/15 border-amber-500/60 text-amber-300 ring-1 ring-amber-500/30 shadow-sm shadow-amber-500/10'
+                    : 'bg-[#141a27] border-[#222c40] text-slate-400 hover:text-slate-200 hover:border-slate-600'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -593,8 +717,8 @@ export const SizingPlanner: React.FC = () => {
                 onClick={() => setHasPattern(!hasPattern)}
                 className={`p-3 rounded-lg border text-left transition-all ${
                   hasPattern
-                    ? 'bg-amber-500/15 border-amber-500/50 text-amber-300'
-                    : 'bg-[#141a27] border-[#222c40] text-slate-400 hover:text-slate-300'
+                    ? 'bg-amber-500/15 border-amber-500/60 text-amber-300 ring-1 ring-amber-500/30 shadow-sm shadow-amber-500/10'
+                    : 'bg-[#141a27] border-[#222c40] text-slate-400 hover:text-slate-200 hover:border-slate-600'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -610,8 +734,8 @@ export const SizingPlanner: React.FC = () => {
                 onClick={() => setHasFib(!hasFib)}
                 className={`p-3 rounded-lg border text-left transition-all ${
                   hasFib
-                    ? 'bg-amber-500/15 border-amber-500/50 text-amber-300'
-                    : 'bg-[#141a27] border-[#222c40] text-slate-400 hover:text-slate-300'
+                    ? 'bg-amber-500/15 border-amber-500/60 text-amber-300 ring-1 ring-amber-500/30 shadow-sm shadow-amber-500/10'
+                    : 'bg-[#141a27] border-[#222c40] text-slate-400 hover:text-slate-200 hover:border-slate-600'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -623,7 +747,7 @@ export const SizingPlanner: React.FC = () => {
             </div>
 
             {/* Mandatory Candlestick Confirmation Checklist */}
-            <div className="p-3.5 rounded-lg bg-[#141a27] border border-[#222d42] space-y-3">
+            <div className="p-4 rounded-xl bg-[#131926] border border-[#232f48] ring-1 ring-white/5 space-y-3">
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2.5 cursor-pointer">
                   <input
@@ -769,21 +893,21 @@ export const SizingPlanner: React.FC = () => {
           <div className="bg-[#0f141e] border border-[#1f283d] rounded-xl p-5 shadow-xl space-y-3.5">
             <div className="flex items-center justify-between">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <Layers className="w-4 h-4 text-blue-400" />
+                <Layers className="w-4 h-4 text-amber-400" />
                 Scale-In (Pyramiding) Validation
               </span>
-              <span className="text-[10px] px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 font-mono-num">
+              <span className="text-[10px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono-num border border-amber-500/30">
                 Add-on ≤ Initial Lots
               </span>
             </div>
 
             <div className="text-xs text-slate-400 space-y-1">
               <div className="flex items-center gap-1.5 text-slate-300">
-                <CheckCircle className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <CheckCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                 <span>Leg 1 SL must be at Breakeven before adding contracts.</span>
               </div>
               <div className="flex items-center gap-1.5 text-slate-300">
-                <CheckCircle className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                <CheckCircle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                 <span>Scale into winners only (favorable price relative to entry).</span>
               </div>
             </div>
@@ -883,13 +1007,33 @@ export const SizingPlanner: React.FC = () => {
               />
             </div>
 
+            {/* Submission Error Banner */}
+            {submissionError && (
+              <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950/60 border border-red-300 dark:border-red-500/50 text-xs text-red-700 dark:text-red-300 flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <span className="font-semibold block">Execution Blocked</span>
+                  <span>{submissionError}</span>
+                </div>
+              </div>
+            )}
+
             {/* Action Bridge Button */}
             <button
               type="button"
+              disabled={!slValidation.isValid || calculatedLots <= 0}
               onClick={handleSendToActiveManager}
-              className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-black font-bold text-sm shadow-xl shadow-amber-500/20 flex items-center justify-center gap-2 transition-all transform active:scale-[0.98]"
+              className={`w-full py-3 px-4 rounded-xl font-bold text-sm shadow-xl flex items-center justify-center gap-2 transition-all transform ${
+                !slValidation.isValid || calculatedLots <= 0
+                  ? 'bg-slate-700 text-slate-400 cursor-not-allowed opacity-60'
+                  : 'bg-gradient-to-r from-amber-500 to-yellow-600 hover:from-amber-400 hover:to-yellow-500 text-black shadow-amber-500/20 active:scale-[0.98]'
+              }`}
             >
-              <span>Send to Journal as Active Trade</span>
+              <span>
+                {!slValidation.isValid
+                  ? 'Fix Stop-Loss Direction to Proceed'
+                  : 'Send to Journal as Active Trade'}
+              </span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>

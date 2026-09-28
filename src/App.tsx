@@ -15,14 +15,10 @@ import { IntelligenceAnalytics } from './components/analytics/IntelligenceAnalyt
 import { AccountHub } from './components/accounts/AccountHub';
 
 const MainContent: React.FC = () => {
-  const { activeTab, theme } = useTrading();
+  const { activeTab } = useTrading();
 
   return (
-    <main
-      className={`min-h-[calc(100vh-120px)] ${
-        theme === 'light' ? 'bg-[#f8fafc] text-slate-800' : 'bg-[#090b10] text-[#e2e8f0]'
-      } transition-colors duration-200`}
-    >
+    <main className="flex-1 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-150">
       {activeTab === 'calculator' && <SizingPlanner />}
       {activeTab === 'active_manager' && <ActiveTradeManager />}
       {activeTab === 'journal' && <MasterJournal />}
@@ -35,14 +31,8 @@ const MainContent: React.FC = () => {
 };
 
 const AppContent: React.FC = () => {
-  const { theme } = useTrading();
-
   return (
-    <div
-      className={`min-h-screen ${
-        theme === 'light' ? 'bg-[#f8fafc] text-slate-900' : 'bg-[#090b10] text-slate-100'
-      } flex flex-col selection:bg-amber-500/20 selection:text-amber-300 transition-colors duration-200`}
-    >
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col selection:bg-amber-500/20 selection:text-amber-500 font-sans antialiased transition-colors duration-150">
       <TopNavBar />
       <MainContent />
     </div>

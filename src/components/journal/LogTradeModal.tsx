@@ -5,6 +5,8 @@ import {
   calculateGoldCashMove,
   checkRevengeTrade,
   stopLossToPips,
+  validateStopLossDirection,
+  validateTakeProfitDirection,
   sanitizeNumberInput,
   toNum,
 } from '../../utils/math';
@@ -16,6 +18,7 @@ import {
   Sparkles,
   CheckCircle,
   AlertCircle,
+  AlertTriangle,
   Link,
   Image as ImageIcon,
   ShieldAlert,
@@ -68,13 +71,17 @@ export const LogTradeModal: React.FC<LogTradeModalProps> = ({ isOpen, onClose })
   const numPlannedTp = toNum(plannedTp, 0);
   const numLots = toNum(lots, 0);
 
-  // Math
+  // Math & Directional Validation
   const realizedCash = calculateGoldCashMove(direction, numEntryPrice, numExitPrice, numLots);
   const initialRisk = Math.abs(numEntryPrice - numStopLossPrice) * numLots * 100;
   const slDist = Math.abs(numEntryPrice - numStopLossPrice);
   const tpDist = Math.abs(numPlannedTp - numEntryPrice);
   const setupR = slDist > 0 && numPlannedTp > 0 ? Math.round((tpDist / slDist) * 100) / 100 : 0;
   const campaignR = initialRisk > 0 ? Math.round((realizedCash / initialRisk) * 100) / 100 : 0;
+
+  const slValidation = validateStopLossDirection(direction, numEntryPrice, numStopLossPrice);
+  const tpValidation = validateTakeProfitDirection(direction, numEntryPrice, numPlannedTp);
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Revenge Trade Sentinel Check (<60 mins after previous stopped trade)
   const revengeCheck = checkRevengeTrade(
@@ -102,6 +109,17 @@ export const LogTradeModal: React.FC<LogTradeModalProps> = ({ isOpen, onClose })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setFormError(null);
+
+    if (!slValidation.isValid) {
+      setFormError(slValidation.error);
+      return;
+    }
+
+    if (numPlannedTp > 0 && !tpValidation.isValid) {
+      setFormError(tpValidation.error);
+      return;
+    }
 
     const violations: string[] = [];
     if (revengeCheck.isRevenge) {
@@ -285,10 +303,22 @@ export const LogTradeModal: React.FC<LogTradeModalProps> = ({ isOpen, onClose })
                 step="0.05"
                 required
                 value={stopLossPrice}
-                onChange={(e) => setStopLossPrice(sanitizeNumberInput(e.target.value))}
+                onChange={(e) => {
+                  setStopLossPrice(sanitizeNumberInput(e.target.value));
+                  setFormError(null);
+                }}
                 placeholder="0.00"
-                className="w-full bg-[#161d2b] border border-[#232f48] focus:border-amber-400 text-slate-100 rounded px-2.5 py-1.5 font-mono-num outline-none transition-colors placeholder:text-slate-600"
+                className={`w-full bg-[#161d2b] border ${
+                  numStopLossPrice > 0 && !slValidation.isValid
+                    ? 'border-red-500 focus:border-red-400'
+                    : 'border-[#232f48] focus:border-amber-400'
+                } text-slate-100 rounded px-2.5 py-1.5 font-mono-num outline-none transition-colors placeholder:text-slate-600`}
               />
+              {numStopLossPrice > 0 && !slValidation.isValid && (
+                <span className="text-[10px] text-red-400 block mt-1 font-medium">
+                  {direction === 'BUY' ? 'Must be < Entry' : 'Must be > Entry'}
+                </span>
+              )}
             </div>
             <div>
               <label className="text-slate-400 block mb-1">Planned TP ($)</label>
@@ -297,10 +327,22 @@ export const LogTradeModal: React.FC<LogTradeModalProps> = ({ isOpen, onClose })
                 step="0.05"
                 required
                 value={plannedTp}
-                onChange={(e) => setPlannedTp(sanitizeNumberInput(e.target.value))}
+                onChange={(e) => {
+                  setPlannedTp(sanitizeNumberInput(e.target.value));
+                  setFormError(null);
+                }}
                 placeholder="0.00"
-                className="w-full bg-[#161d2b] border border-[#232f48] focus:border-amber-400 text-slate-100 rounded px-2.5 py-1.5 font-mono-num outline-none transition-colors placeholder:text-slate-600"
+                className={`w-full bg-[#161d2b] border ${
+                  numPlannedTp > 0 && !tpValidation.isValid
+                    ? 'border-red-500 focus:border-red-400'
+                    : 'border-[#232f48] focus:border-amber-400'
+                } text-slate-100 rounded px-2.5 py-1.5 font-mono-num outline-none transition-colors placeholder:text-slate-600`}
               />
+              {numPlannedTp > 0 && !tpValidation.isValid && (
+                <span className="text-[10px] text-red-400 block mt-1 font-medium">
+                  {direction === 'BUY' ? 'Must be > Entry' : 'Must be < Entry'}
+                </span>
+              )}
             </div>
           </div>
 
@@ -488,6 +530,16 @@ export const LogTradeModal: React.FC<LogTradeModalProps> = ({ isOpen, onClose })
             />
           </div>
 
+          {formError && (
+            <div className="p-3 rounded-lg bg-red-950/60 border border-red-500/50 text-xs text-red-300 flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <span className="font-bold block text-red-200">Validation Error</span>
+                <span>{formError}</span>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#1b2333]">
             <button
               type="button"
@@ -498,7 +550,12 @@ export const LogTradeModal: React.FC<LogTradeModalProps> = ({ isOpen, onClose })
             </button>
             <button
               type="submit"
-              className="px-5 py-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-black font-bold text-xs shadow-lg transition-colors"
+              disabled={!slValidation.isValid}
+              className={`px-5 py-2.5 rounded-lg font-bold text-xs shadow-lg transition-colors ${
+                !slValidation.isValid
+                  ? 'bg-slate-700 text-slate-400 cursor-not-allowed'
+                  : 'bg-amber-500 hover:bg-amber-400 text-black'
+              }`}
             >
               Save to Master Journal
             </button>

@@ -34,6 +34,8 @@ export const AccountHub: React.FC = () => {
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
+  const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
+  const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
 
   // New Account Form State
   const [name, setName] = useState('My Funded Account');
@@ -106,7 +108,8 @@ export const AccountHub: React.FC = () => {
     updateAccount(accId, {
       high_water_mark: acc.current_balance,
     });
-    alert(`Broker rollover simulated: Daily High-Water Mark reset to current balance ($${acc.current_balance.toLocaleString()}).`);
+    setFeedbackMessage(`Broker rollover simulated: Daily High-Water Mark reset to current balance ($${acc.current_balance.toLocaleString()}).`);
+    setTimeout(() => setFeedbackMessage(null), 5000);
   };
 
   // Export JSON Backup
@@ -123,6 +126,8 @@ export const AccountHub: React.FC = () => {
     a.download = `xauusd-guardian-backup-${new Date().toISOString().slice(0, 10)}.json`;
     a.click();
     URL.revokeObjectURL(url);
+    setFeedbackMessage('Backup exported successfully.');
+    setTimeout(() => setFeedbackMessage(null), 4000);
   };
 
   // Import JSON Backup
@@ -139,10 +144,12 @@ export const AccountHub: React.FC = () => {
             localStorage.setItem('xauusd_guardian_trades_v1', JSON.stringify(parsed.trades));
             window.location.reload();
           } else {
-            alert('Invalid backup file format.');
+            setFeedbackMessage('Invalid backup file format.');
+            setTimeout(() => setFeedbackMessage(null), 5000);
           }
         } catch (err: any) {
-          alert(`Error importing file: ${err.message}`);
+          setFeedbackMessage(`Error importing file: ${err.message}`);
+          setTimeout(() => setFeedbackMessage(null), 5000);
         }
       };
       reader.readAsText(file);
@@ -190,6 +197,23 @@ export const AccountHub: React.FC = () => {
         </div>
       </div>
 
+      {/* Feedback Notification Banner */}
+      {feedbackMessage && (
+        <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300 flex items-center justify-between shadow-lg">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-amber-400 shrink-0" />
+            <span className="font-semibold">{feedbackMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setFeedbackMessage(null)}
+            className="text-slate-400 hover:text-white p-1"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Accounts List Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
         {accounts.map((acc) => {
@@ -210,25 +234,25 @@ export const AccountHub: React.FC = () => {
               <div className="p-4 bg-[#131926] border-b border-[#1b2333] flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-bold text-sm text-slate-100">{acc.name}</span>
+                    <span className="font-bold text-sm text-slate-900 dark:text-slate-100">{acc.name}</span>
                     {isSelected && (
                       <span className="px-1.5 py-0.2 rounded bg-amber-500 text-black text-[9px] font-extrabold uppercase">
                         ACTIVE
                       </span>
                     )}
                   </div>
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">
                     {acc.firm_name} • Server UTC+{acc.server_timezone_offset}
                   </span>
                 </div>
 
                 <span
-                  className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase shadow-xs ${
                     acc.category === 'personal'
-                      ? 'bg-emerald-500/20 text-emerald-300'
+                      ? 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-50 border border-emerald-300 dark:border-emerald-500/60'
                       : acc.category === 'prop_funded'
-                      ? 'bg-amber-500/20 text-amber-300'
-                      : 'bg-blue-500/20 text-blue-300'
+                      ? 'bg-amber-50 dark:bg-amber-950/80 text-amber-900 dark:text-amber-50 border border-amber-300 dark:border-amber-500/60'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600'
                   }`}
                 >
                   {acc.category.toUpperCase().replace('_', ' ')}
@@ -238,33 +262,33 @@ export const AccountHub: React.FC = () => {
               {/* Balances & Targets */}
               <div className="p-4 space-y-3.5 text-xs">
                 <div className="flex justify-between items-baseline">
-                  <span className="text-slate-400">Current Balance:</span>
-                  <span className="text-xl font-bold font-mono-num text-slate-100">
+                  <span className="text-slate-600 dark:text-slate-400 font-medium">Current Balance:</span>
+                  <span className="text-xl font-bold font-mono-num text-slate-900 dark:text-slate-100">
                     ${acc.current_balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
 
-                <div className="flex justify-between items-center text-slate-400 text-[11px]">
-                  <span>Starting Capital:</span>
-                  <span className="font-mono-num text-slate-300">
+                <div className="flex justify-between items-center text-[11px]">
+                  <span className="text-slate-600 dark:text-slate-400 font-medium">Starting Capital:</span>
+                  <span className="font-mono-num font-semibold text-slate-800 dark:text-slate-200">
                     ${acc.starting_balance.toLocaleString()}
                   </span>
                 </div>
 
                 {/* Target progress for P1/P2 */}
                 {compliance.targetUsd && (
-                  <div className="p-2.5 rounded-lg bg-[#141a27] border border-[#222d42] space-y-1.5">
+                  <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-[#141a27] border border-slate-200 dark:border-[#222d42] space-y-1.5 shadow-xs">
                     <div className="flex justify-between items-center">
-                      <span className="text-blue-300 font-bold">
+                      <span className="text-emerald-700 dark:text-emerald-300 font-bold">
                         Target ({acc.profit_target_pct}%):
                       </span>
-                      <span className="font-mono-num font-bold text-blue-400">
+                      <span className="font-mono-num font-bold text-emerald-600 dark:text-emerald-400">
                         {compliance.targetProgressPct?.toFixed(1)}% (${compliance.targetUsd.toLocaleString()})
                       </span>
                     </div>
-                    <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-800 rounded-full overflow-hidden">
                       <div
-                        className="bg-blue-500 h-full transition-all"
+                        className="bg-emerald-500 h-full transition-all"
                         style={{ width: `${compliance.targetProgressPct}%` }}
                       />
                     </div>
@@ -274,21 +298,21 @@ export const AccountHub: React.FC = () => {
                 {/* Daily Drawdown Floor */}
                 {isProp && (
                   <div className="space-y-1 text-[11px]">
-                    <div className="flex justify-between text-slate-400">
-                      <span>Daily Drawdown Headroom:</span>
+                    <div className="flex justify-between">
+                      <span className="text-slate-600 dark:text-slate-400 font-medium">Daily Drawdown Headroom:</span>
                       <span
                         className={`font-mono-num font-bold ${
                           compliance.remainingDailyHeadroom < 1000
-                            ? 'text-rose-400'
-                            : 'text-emerald-400'
+                            ? 'text-rose-600 dark:text-rose-400'
+                            : 'text-emerald-600 dark:text-emerald-400'
                         }`}
                       >
                         ${compliance.remainingDailyHeadroom.toFixed(2)}
                       </span>
                     </div>
-                    <div className="flex justify-between text-slate-400">
-                      <span>Max Risk Cap / Trade:</span>
-                      <span className="font-mono-num text-amber-300">
+                    <div className="flex justify-between">
+                      <span className="text-slate-600 dark:text-slate-400 font-medium">Max Risk Cap / Trade:</span>
+                      <span className="font-mono-num font-bold text-amber-700 dark:text-amber-300">
                         {acc.max_risk_pct_cap}%
                       </span>
                     </div>
@@ -310,7 +334,7 @@ export const AccountHub: React.FC = () => {
                 {acc.category === 'prop_p1' && (
                   <button
                     onClick={() => handleAdvanceStage(acc)}
-                    className="w-full py-2 rounded-lg bg-blue-600/20 hover:bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
+                    className="w-full py-2 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors"
                   >
                     <span>Pass Phase 1 → Advance to Phase 2</span>
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -346,12 +370,9 @@ export const AccountHub: React.FC = () => {
 
                   {accounts.length > 1 && (
                     <button
-                      onClick={() => {
-                        if (confirm(`Delete account "${acc.name}"?`)) {
-                          deleteAccount(acc.id);
-                        }
-                      }}
-                      className="p-1 rounded text-slate-500 hover:text-rose-400 transition-colors"
+                      type="button"
+                      onClick={() => setAccountToDelete(acc)}
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-950/30 transition-colors cursor-pointer"
                       title="Delete account"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -487,6 +508,62 @@ export const AccountHub: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Delete Account Confirmation */}
+      {accountToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#0f141e] border border-slate-200 dark:border-[#222e44] rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-rose-50 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-500/30 flex items-center justify-center shrink-0 text-rose-600 dark:text-rose-400">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">Delete Account</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">This action cannot be undone.</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#141a27] border border-slate-200 dark:border-[#222d42] text-xs space-y-1.5 shadow-xs">
+              <div className="flex items-center justify-between font-bold">
+                <span className="text-slate-900 dark:text-slate-100">{accountToDelete.name}</span>
+                <span className="font-mono-num text-amber-600 dark:text-amber-400">
+                  ${accountToDelete.current_balance.toLocaleString()}
+                </span>
+              </div>
+              <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center justify-between">
+                <span>Firm: {accountToDelete.firm_name}</span>
+                <span>Type: {accountToDelete.category.toUpperCase().replace('_', ' ')}</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              Are you sure you want to delete this trading account? This account profile will be removed from your Hub.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setAccountToDelete(null)}
+                className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteAccount(accountToDelete.id);
+                  setAccountToDelete(null);
+                  setFeedbackMessage(`Account "${accountToDelete.name}" deleted.`);
+                  setTimeout(() => setFeedbackMessage(null), 4000);
+                }}
+                className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-lg shadow-rose-600/30 transition-all cursor-pointer"
+              >
+                Delete Account
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -1,9 +1,12 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTrading } from '../../context/TradingContext';
 import { MasterTrade } from '../../types';
 import { calculateAccountCompliance, checkLotConsistency } from '../../utils/math';
+import { PerformanceCalendar } from './PerformanceCalendar';
+import { DailyPnLLineChart } from './DailyPnLLineChart';
 import {
   BarChart3,
+  Calendar as CalendarIcon,
   TrendingUp,
   ShieldAlert,
   Flame,
@@ -16,10 +19,14 @@ import {
   DollarSign,
   TrendingDown,
   Percent,
+  LineChart as LineChartIcon,
 } from 'lucide-react';
 
 export const IntelligenceAnalytics: React.FC = () => {
   const { filteredTrades, selectedAccount } = useTrading();
+  const [analyticsView, setAnalyticsView] = useState<'calendar' | 'overview'>('calendar');
+  const [selectedMonth, setSelectedMonth] = useState<Date>(() => new Date(2026, 8, 1));
+  const [calendarDisplayMode, setCalendarDisplayMode] = useState<'both' | 'chart' | 'calendar'>('both');
 
   const closedTrades = useMemo(
     () => filteredTrades.filter((t) => t.status === 'CLOSED'),
@@ -162,103 +169,206 @@ export const IntelligenceAnalytics: React.FC = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-[#1f283d]">
+      <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-[#1f283d]">
         <div>
           <div className="flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-amber-400" />
-            <h1 className="text-xl font-bold text-slate-100 tracking-tight">
-              Behavioral & Confluence Edge Intelligence
+            {analyticsView === 'calendar' ? (
+              <CalendarIcon className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+            ) : (
+              <BarChart3 className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+            )}
+            <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
+              {analyticsView === 'calendar' ? 'Monthly Performance Calendar' : 'Behavioral & Confluence Edge Intelligence'}
             </h1>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
-            Institutional metrics • Confluence win-rate matrix, cost of indiscipline meter, and prop firm drawdown watermark.
+          <p className="text-xs text-slate-600 dark:text-slate-400 mt-1">
+            {analyticsView === 'calendar'
+              ? 'Daily performance matrix • Filter by Net P&L, R-Multiple, Win Rate, or Volume with weekly summaries and setup tags.'
+              : 'Institutional metrics • Confluence win-rate matrix, cost of indiscipline meter, and prop firm drawdown watermark.'}
           </p>
         </div>
 
-        <span className="text-xs font-mono-num text-slate-400 bg-[#121824] px-3 py-1.5 rounded-lg border border-[#1f283d]">
-          Analyzing {totalTrades} Closed Campaigns
-        </span>
+        {/* View Switcher: Calendar vs Overview */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center bg-slate-100 dark:bg-[#121824] p-1 rounded-xl border border-slate-300 dark:border-[#1f283d] shadow-xs">
+            <button
+              type="button"
+              onClick={() => setAnalyticsView('calendar')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                analyticsView === 'calendar'
+                  ? 'bg-amber-500 text-black shadow-md'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <CalendarIcon className="w-3.5 h-3.5" />
+              <span>Performance Calendar</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setAnalyticsView('overview')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                analyticsView === 'overview'
+                  ? 'bg-amber-500 text-black shadow-md'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+              <span>Edge & Behavioral Analytics</span>
+            </button>
+          </div>
+
+          <span className="text-xs font-mono-num font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-[#121824] px-3 py-2 rounded-xl border border-slate-200 dark:border-[#1f283d]">
+            {totalTrades} Closed Campaigns
+          </span>
+        </div>
       </div>
 
-      {/* Top Stat Cards */}
+      {/* Top Stat Cards (Global Key Metrics) */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="bg-[#0f141e] border border-[#1f283d] rounded-xl p-4">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block">Win Rate</span>
+        <div className="bg-[#0f141e] border border-[#1f283d] rounded-xl p-4 shadow-xs">
+          <span className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-300 block tracking-wider">Win Rate</span>
           <div className="flex items-baseline gap-1 mt-1">
-            <span className="text-2xl font-bold font-mono-num text-slate-100">
+            <span className="text-2xl font-bold font-mono-num text-slate-900 dark:text-white">
               {winRate.toFixed(1)}%
             </span>
           </div>
-          <span className="text-[10px] text-slate-400 mt-1 block">
+          <span className="text-[10px] text-slate-600 dark:text-slate-400 mt-1 block font-medium">
             {winningTrades.length}W / {losingTrades.length}L / {breakevenTrades.length}BE
           </span>
         </div>
 
-        <div className="bg-[#0f141e] border border-[#1f283d] rounded-xl p-4">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block">Net Realized PnL</span>
+        <div className="bg-[#0f141e] border border-[#1f283d] rounded-xl p-4 shadow-xs">
+          <span className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-300 block tracking-wider">Net Realized PnL</span>
           <div className="flex items-baseline gap-1 mt-1">
             <span
               className={`text-2xl font-bold font-mono-num ${
-                netProfit >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                netProfit >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
               }`}
             >
               {netProfit >= 0 ? `+$${netProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `-$${Math.abs(netProfit).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             </span>
           </div>
-          <span className="text-[10px] text-slate-400 mt-1 block">Filtered campaigns</span>
+          <span className="text-[10px] text-slate-600 dark:text-slate-400 mt-1 block font-medium">Filtered campaigns</span>
         </div>
 
-        <div className="bg-[#0f141e] border border-[#1f283d] rounded-xl p-4">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block">Profit Factor</span>
+        <div className="bg-[#0f141e] border border-[#1f283d] rounded-xl p-4 shadow-xs">
+          <span className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-300 block tracking-wider">Profit Factor</span>
           <div className="flex items-baseline gap-1 mt-1">
-            <span className="text-2xl font-bold font-mono-num text-amber-300">
+            <span className="text-2xl font-bold font-mono-num text-amber-600 dark:text-amber-300">
               {profitFactor.toFixed(2)}
             </span>
           </div>
-          <span className="text-[10px] text-slate-400 mt-1 block">
+          <span className="text-[10px] text-slate-600 dark:text-slate-400 mt-1 block font-medium">
             +${grossProfit.toFixed(0)} / -${grossLoss.toFixed(0)}
           </span>
         </div>
 
-        <div className="bg-[#0f141e] border border-[#1f283d] rounded-xl p-4">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block">Avg Campaign R</span>
+        <div className="bg-[#0f141e] border border-[#1f283d] rounded-xl p-4 shadow-xs">
+          <span className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-300 block tracking-wider">Avg Campaign R</span>
           <div className="flex items-baseline gap-1 mt-1">
             <span
               className={`text-2xl font-bold font-mono-num ${
-                avgCampaignR >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                avgCampaignR >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
               }`}
             >
               {avgCampaignR.toFixed(2)}R
             </span>
           </div>
-          <span className="text-[10px] text-slate-400 mt-1 block">Realized multiple</span>
+          <span className="text-[10px] text-slate-600 dark:text-slate-400 mt-1 block font-medium">Realized multiple</span>
         </div>
 
-        <div className="bg-[#0f141e] border border-[#1f283d] rounded-xl p-4">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block">Avg Win / Avg Loss</span>
+        <div className="bg-[#0f141e] border border-[#1f283d] rounded-xl p-4 shadow-xs">
+          <span className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-300 block tracking-wider">Avg Win / Avg Loss</span>
           <div className="flex items-baseline gap-1 mt-1">
-            <span className="text-lg font-bold font-mono-num text-slate-100">
+            <span className="text-lg font-bold font-mono-num text-slate-900 dark:text-white">
               ${avgWin.toFixed(0)} / ${avgLoss.toFixed(0)}
             </span>
           </div>
-          <span className="text-[10px] text-slate-400 mt-1 block">
+          <span className="text-[10px] text-slate-600 dark:text-slate-400 mt-1 block font-medium">
             Ratio: {avgLoss > 0 ? (avgWin / avgLoss).toFixed(2) : '—'}
           </span>
         </div>
 
-        <div className="bg-[#0f141e] border border-[#1f283d] rounded-xl p-4">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block">Leak Cost</span>
+        <div className="bg-[#0f141e] border border-[#1f283d] rounded-xl p-4 shadow-xs">
+          <span className="text-[10px] uppercase font-bold text-slate-600 dark:text-slate-300 block tracking-wider">Leak Cost</span>
           <div className="flex items-baseline gap-1 mt-1">
-            <span className="text-2xl font-bold font-mono-num text-rose-400">
+            <span className="text-2xl font-bold font-mono-num text-rose-600 dark:text-rose-400">
               -${totalMistakeCost.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
             </span>
           </div>
-          <span className="text-[10px] text-rose-300/80 mt-1 block">Lost to indiscipline</span>
+          <span className="text-[10px] text-rose-600 dark:text-rose-300 mt-1 block font-medium">Lost to indiscipline</span>
         </div>
       </div>
 
-      {/* Row 2: Equity Curve & Cost of Indiscipline Comparative Meter */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Main Analytics View Body */}
+      {analyticsView === 'calendar' ? (
+        <div className="space-y-6">
+          {/* Sub-view toggle: Chart vs Calendar Grid vs Both */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-[#0f141e] p-3.5 rounded-2xl border border-slate-200 dark:border-[#1f283d] shadow-sm">
+            <div className="flex items-center gap-2">
+              <LineChartIcon className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                Monthly Visualizations
+              </span>
+            </div>
+
+            <div className="flex items-center bg-slate-100 dark:bg-[#121824] p-1 rounded-xl border border-slate-300 dark:border-[#1f283d] text-xs">
+              <button
+                type="button"
+                onClick={() => setCalendarDisplayMode('both')}
+                className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                  calendarDisplayMode === 'both'
+                    ? 'bg-amber-500 text-black shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                Line Chart + Calendar Grid
+              </button>
+              <button
+                type="button"
+                onClick={() => setCalendarDisplayMode('chart')}
+                className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                  calendarDisplayMode === 'chart'
+                    ? 'bg-amber-500 text-black shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                PnL Line Chart Only
+              </button>
+              <button
+                type="button"
+                onClick={() => setCalendarDisplayMode('calendar')}
+                className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer ${
+                  calendarDisplayMode === 'calendar'
+                    ? 'bg-amber-500 text-black shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                }`}
+              >
+                Calendar Grid Only
+              </button>
+            </div>
+          </div>
+
+          {/* Recharts Daily PnL Line Chart */}
+          {(calendarDisplayMode === 'both' || calendarDisplayMode === 'chart') && (
+            <DailyPnLLineChart
+              selectedMonth={selectedMonth}
+              onMonthChange={setSelectedMonth}
+            />
+          )}
+
+          {/* Monthly Performance Calendar Grid */}
+          {(calendarDisplayMode === 'both' || calendarDisplayMode === 'calendar') && (
+            <PerformanceCalendar
+              currentMonth={selectedMonth}
+              onMonthChange={setSelectedMonth}
+            />
+          )}
+        </div>
+      ) : (
+        <>
+          {/* Row 2: Equity Curve & Cost of Indiscipline Comparative Meter */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Dynamic SVG Equity Curve (7 cols) */}
         <div className="lg:col-span-7 bg-[#0f141e] border border-[#1f283d] rounded-xl p-5 shadow-2xl space-y-4">
           <div className="flex items-center justify-between">
@@ -441,10 +551,10 @@ export const IntelligenceAnalytics: React.FC = () => {
 
             <div className="flex items-center justify-between p-2 rounded bg-[#121824] border border-[#1c2537]">
               <span className="flex items-center gap-1.5 text-slate-300">
-                <Layers className="w-3.5 h-3.5 text-blue-400" />
+                <Layers className="w-3.5 h-3.5 text-amber-400" />
                 Premature Runner Exits (Left on table)
               </span>
-              <span className="font-mono-num font-bold text-blue-400">
+              <span className="font-mono-num font-bold text-amber-400">
                 -${prematureExitLosses.toFixed(2)}
               </span>
             </div>
@@ -597,6 +707,8 @@ export const IntelligenceAnalytics: React.FC = () => {
           </div>
         </div>
       </div>
+        </>
+      )}
     </div>
   );
 };

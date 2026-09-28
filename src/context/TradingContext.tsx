@@ -104,7 +104,13 @@ export const TradingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [trades, setTrades] = useState<MasterTrade[]>(() => {
     try {
       const saved = localStorage.getItem(TRADES_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : INITIAL_TRADES;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 8) {
+          return parsed;
+        }
+      }
+      return INITIAL_TRADES;
     } catch {
       return INITIAL_TRADES;
     }

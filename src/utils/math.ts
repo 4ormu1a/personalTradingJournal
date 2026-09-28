@@ -24,21 +24,91 @@ export function calculateGoldCashMove(
 /**
  * Calculates exact lot size:
  * Lots = Cash Risk / (|Entry - SL| * 100)
+ * Validates directional polarity when direction is provided:
+ * BUY: SL must be strictly below Entry
+ * SELL: SL must be strictly above Entry
  */
 export function calculateGoldLotSize(
   entry: number,
   stopLoss: number,
-  cashRisk: number
-): { lots: number; priceDistance: number; pips: number } {
+  cashRisk: number,
+  direction?: TradeDirection
+): { lots: number; priceDistance: number; pips: number; isDirectionValid: boolean } {
   const priceDistance = Math.abs(entry - stopLoss);
-  if (priceDistance <= 0.01 || cashRisk <= 0) {
-    return { lots: 0, priceDistance: 0, pips: 0 };
+  
+  const isDirectionValid = direction
+    ? (direction === 'BUY' ? stopLoss < entry : stopLoss > entry)
+    : priceDistance > 0.01;
+
+  if (priceDistance <= 0.01 || cashRisk <= 0 || !isDirectionValid) {
+    return {
+      lots: 0,
+      priceDistance,
+      pips: Math.round((priceDistance / GOLD_PIP_VALUE) * 10) / 10,
+      isDirectionValid,
+    };
   }
   const rawLots = cashRisk / (priceDistance * GOLD_CONTRACT_SIZE);
   // Institutional lot sizes rounded to 2 decimal places
   const lots = Math.floor(rawLots * 100) / 100;
   const pips = Math.round((priceDistance / GOLD_PIP_VALUE) * 10) / 10;
-  return { lots, priceDistance, pips };
+  return { lots, priceDistance, pips, isDirectionValid };
+}
+
+/**
+ * Validates stop loss direction for new orders:
+ * For BUY: stopLoss must be strictly less than entry
+ * For SELL: stopLoss must be strictly greater than entry
+ */
+export function validateStopLossDirection(
+  direction: TradeDirection,
+  entry: number,
+  stopLoss: number
+): { isValid: boolean; error: string | null } {
+  if (entry <= 0 || stopLoss <= 0) {
+    return { isValid: false, error: 'Entry and Stop Loss prices must be greater than zero.' };
+  }
+  if (direction === 'BUY' && stopLoss >= entry) {
+    return {
+      isValid: false,
+      error: `Invalid Stop Loss: For BUY positions, Stop Loss ($${stopLoss.toFixed(2)}) must be below Entry Price ($${entry.toFixed(2)}).`,
+    };
+  }
+  if (direction === 'SELL' && stopLoss <= entry) {
+    return {
+      isValid: false,
+      error: `Invalid Stop Loss: For SELL positions, Stop Loss ($${stopLoss.toFixed(2)}) must be above Entry Price ($${entry.toFixed(2)}).`,
+    };
+  }
+  return { isValid: true, error: null };
+}
+
+/**
+ * Validates take profit direction for new orders:
+ * For BUY: takeProfit must be strictly greater than entry
+ * For SELL: takeProfit must be strictly less than entry
+ */
+export function validateTakeProfitDirection(
+  direction: TradeDirection,
+  entry: number,
+  takeProfit: number
+): { isValid: boolean; error: string | null } {
+  if (entry <= 0 || takeProfit <= 0) {
+    return { isValid: true, error: null };
+  }
+  if (direction === 'BUY' && takeProfit <= entry) {
+    return {
+      isValid: false,
+      error: `Invalid Take Profit: For BUY positions, Take Profit ($${takeProfit.toFixed(2)}) must be above Entry Price ($${entry.toFixed(2)}).`,
+    };
+  }
+  if (direction === 'SELL' && takeProfit >= entry) {
+    return {
+      isValid: false,
+      error: `Invalid Take Profit: For SELL positions, Take Profit ($${takeProfit.toFixed(2)}) must be below Entry Price ($${entry.toFixed(2)}).`,
+    };
+  }
+  return { isValid: true, error: null };
 }
 
 /**

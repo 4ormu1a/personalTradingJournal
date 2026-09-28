@@ -351,12 +351,12 @@ export const StatementImporter: React.FC = () => {
         <div className="bg-[#0f141e] border border-[#1f283d] rounded-xl p-5 shadow-2xl space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-bold text-sm text-slate-100 flex items-center gap-2">
-                <Database className="w-4 h-4 text-amber-400" />
+              <h3 className="font-bold text-sm text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                <Database className="w-4 h-4 text-amber-500 dark:text-amber-400" />
                 Parsed Trade Campaigns Preview ({parsedPreview.length})
               </h3>
-              <span className="text-[11px] text-slate-400">
-                These trades will land in the Triage Inbox with <code className="text-amber-400 font-mono-num">UNREVIEWED</code> status.
+              <span className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">
+                These trades will land in the Triage Inbox with <code className="text-amber-700 dark:text-amber-300 font-mono-num font-bold">UNREVIEWED</code> status.
               </span>
             </div>
 
@@ -392,19 +392,19 @@ export const StatementImporter: React.FC = () => {
                     </td>
                     <td className="py-2.5 px-3 font-mono-num">{trade.initial_planned_lots}</td>
                     <td className="py-2.5 px-3">
-                      <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 text-[10px] font-semibold">
+                      <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 text-[10px] font-bold shadow-xs">
                         {trade.legs.length} Legs
                       </span>
                     </td>
                     <td
                       className={`py-2.5 px-3 font-mono-num font-bold ${
-                        trade.realized_pnl >= 0 ? 'text-emerald-400' : 'text-rose-400'
+                        trade.realized_pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
                       }`}
                     >
                       {trade.realized_pnl >= 0 ? '+' : ''}${trade.realized_pnl.toFixed(2)}
                     </td>
                     <td className="py-2.5 px-3">
-                      <span className="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] font-extrabold uppercase">
+                      <span className="px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/80 text-amber-900 dark:text-amber-50 border border-amber-300 dark:border-amber-500/60 text-[10px] font-extrabold uppercase shadow-xs">
                         UNREVIEWED
                       </span>
                     </td>

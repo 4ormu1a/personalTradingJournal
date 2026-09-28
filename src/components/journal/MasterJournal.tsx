@@ -26,6 +26,7 @@ export const MasterJournal: React.FC = () => {
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [expandedTradeId, setExpandedTradeId] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [tradeToDelete, setTradeToDelete] = useState<MasterTrade | null>(null);
 
   const getAccountName = (accId: string) => {
     const acc = accounts.find((a) => a.id === accId);
@@ -97,13 +98,13 @@ export const MasterJournal: React.FC = () => {
                         {/* Trade / Account */}
                         <td className="py-3.5 px-4">
                           <div className="flex flex-col">
-                            <span className="font-bold text-slate-200 text-xs">
+                            <span className="font-bold text-slate-900 dark:text-slate-100 text-xs">
                               {trade.symbol}
                             </span>
-                            <span className="text-[10px] text-slate-400 truncate max-w-[160px]">
+                            <span className="text-[10px] text-slate-600 dark:text-slate-300 font-medium truncate max-w-[160px]">
                               {getAccountName(trade.account_id)}
                             </span>
-                            <span className="text-[10px] text-slate-500 font-mono-num mt-0.5">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono-num font-semibold mt-0.5">
                               {new Date(trade.opened_at).toLocaleDateString()}
                             </span>
                           </div>
@@ -113,10 +114,10 @@ export const MasterJournal: React.FC = () => {
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2">
                             <span
-                              className={`flex items-center gap-0.5 px-2 py-0.5 rounded text-[10px] font-extrabold ${
+                              className={`flex items-center gap-0.5 px-2 py-0.5 rounded text-[10px] font-bold ${
                                 trade.direction === 'BUY'
-                                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                                  : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                  ? 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-50 border border-emerald-300 dark:border-emerald-500/60 shadow-xs'
+                                  : 'bg-rose-50 dark:bg-rose-950/80 text-rose-900 dark:text-rose-50 border border-rose-300 dark:border-rose-500/60 shadow-xs'
                               }`}
                             >
                               {trade.direction === 'BUY' ? (
@@ -126,11 +127,11 @@ export const MasterJournal: React.FC = () => {
                               )}
                               {trade.direction}
                             </span>
-                            <span className="text-[11px] px-1.5 py-0.5 rounded bg-[#161e2e] text-slate-400">
+                            <span className="text-[11px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-[#161e2e] text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 font-semibold">
                               {trade.session}
                             </span>
                           </div>
-                          <div className="text-[10px] text-slate-400 font-mono-num mt-1">
+                          <div className="text-[10px] text-slate-600 dark:text-slate-300 font-mono-num font-medium mt-1">
                             {trade.initial_planned_lots} lots • SL ${trade.planned_sl.toFixed(2)}
                           </div>
                         </td>
@@ -139,22 +140,22 @@ export const MasterJournal: React.FC = () => {
                         <td className="py-3.5 px-4">
                           <div className="flex flex-wrap gap-1 max-w-[200px]">
                             {trade.has_sr && (
-                              <span className="px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-medium">
+                              <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 text-[10px] font-bold shadow-xs">
                                 S/R
                               </span>
                             )}
                             {trade.has_trendline_3rd_touch && (
-                              <span className="px-1.5 py-0.2 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30 text-[10px] font-medium">
+                              <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 text-[10px] font-bold shadow-xs">
                                 Trendline
                               </span>
                             )}
                             {trade.has_chart_pattern && (
-                              <span className="px-1.5 py-0.2 rounded bg-purple-500/15 text-purple-300 border border-purple-500/30 text-[10px] font-medium">
+                              <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 text-[10px] font-bold shadow-xs">
                                 Pattern
                               </span>
                             )}
                             {trade.has_fibonacci && (
-                              <span className="px-1.5 py-0.2 rounded bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 text-[10px] font-medium">
+                              <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 text-[10px] font-bold shadow-xs">
                                 Fib
                               </span>
                             )}
@@ -162,17 +163,17 @@ export const MasterJournal: React.FC = () => {
                               !trade.has_trendline_3rd_touch &&
                               !trade.has_chart_pattern &&
                               !trade.has_fibonacci && (
-                                <span className="text-[10px] text-slate-500">None</span>
+                                <span className="text-[10px] text-slate-500 font-medium">None</span>
                               )}
                           </div>
                           <div className="mt-1">
                             {trade.candlestick_confirmed ? (
-                              <span className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
+                              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
                                 <CheckCircle2 className="w-2.5 h-2.5" />
                                 {trade.candlestick_type}
                               </span>
                             ) : (
-                              <span className="text-[10px] text-amber-400 font-medium flex items-center gap-1">
+                              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
                                 <AlertTriangle className="w-2.5 h-2.5" />
                                 Unconfirmed
                               </span>
@@ -189,25 +190,25 @@ export const MasterJournal: React.FC = () => {
                                 REVENGE TRADE
                               </span>
                             ) : trade.discipline_rating === 'DISCIPLINED' ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-50 border border-emerald-300 dark:border-emerald-500/60 shadow-xs">
                                 <CheckCircle2 className="w-3 h-3" />
                                 Disciplined
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 dark:bg-amber-950/80 text-amber-900 dark:text-amber-50 border border-amber-300 dark:border-amber-500/60 shadow-xs">
                                 <AlertTriangle className="w-3 h-3" />
                                 Violation
                               </span>
                             )}
 
                             {trade.premature_exit_loss_usd > 0 && (
-                              <span className="block text-[10px] text-amber-400 font-mono-num">
+                              <span className="block text-[10px] text-amber-700 dark:text-amber-300 font-mono-num font-semibold">
                                 Left on table: -${trade.premature_exit_loss_usd.toFixed(0)}
                               </span>
                             )}
 
                             {trade.is_news_trade && (
-                              <span className="block text-[10px] text-blue-400 font-medium">
+                              <span className="block text-[10px] text-amber-700 dark:text-amber-300 font-semibold">
                                 News Window
                               </span>
                             )}
@@ -219,10 +220,10 @@ export const MasterJournal: React.FC = () => {
                           <span
                             className={`text-sm font-bold ${
                               trade.realized_pnl > 0
-                                ? 'text-emerald-400'
+                                ? 'text-emerald-600 dark:text-emerald-400'
                                 : trade.realized_pnl < 0
-                                ? 'text-rose-400'
-                                : 'text-slate-400'
+                                ? 'text-rose-600 dark:text-rose-400'
+                                : 'text-slate-700 dark:text-slate-300'
                             }`}
                           >
                             {trade.realized_pnl >= 0
@@ -234,17 +235,17 @@ export const MasterJournal: React.FC = () => {
                         {/* Campaign R */}
                         <td className="py-3.5 px-4 font-mono-num">
                           <span
-                            className={`px-2 py-0.5 rounded font-bold text-xs ${
+                            className={`px-2 py-0.5 rounded font-bold text-xs inline-block ${
                               trade.campaign_r_multiple >= 1
-                                ? 'bg-emerald-500/20 text-emerald-300'
+                                ? 'bg-emerald-50 dark:bg-emerald-950/80 text-emerald-900 dark:text-emerald-50 border border-emerald-300 dark:border-emerald-500/60 shadow-xs'
                                 : trade.campaign_r_multiple < 0
-                                ? 'bg-rose-500/20 text-rose-300'
-                                : 'bg-slate-800 text-slate-300'
+                                ? 'bg-rose-50 dark:bg-rose-950/80 text-rose-900 dark:text-rose-50 border border-rose-300 dark:border-rose-500/60 shadow-xs'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white border border-slate-300 dark:border-slate-600 shadow-xs'
                             }`}
                           >
                             {trade.campaign_r_multiple.toFixed(2)}R
                           </span>
-                          <span className="text-[10px] text-slate-500 block mt-0.5">
+                          <span className="text-[10px] text-slate-600 dark:text-slate-400 font-semibold block mt-0.5">
                             Plan: {trade.setup_r_multiple}R
                           </span>
                         </td>
@@ -268,7 +269,7 @@ export const MasterJournal: React.FC = () => {
                                 onClick={() =>
                                   setSelectedImage(trade.chart_image_data || trade.chart_before_url || '')
                                 }
-                                className="p-1.5 rounded bg-[#182133] hover:bg-[#232f48] text-blue-400 transition-colors"
+                                className="p-1.5 rounded bg-[#182133] hover:bg-[#232f48] text-slate-300 hover:text-white transition-colors"
                                 title="View Chart Preview"
                               >
                                 <ImageIcon className="w-3.5 h-3.5" />
@@ -297,12 +298,9 @@ export const MasterJournal: React.FC = () => {
                             </button>
 
                             <button
-                              onClick={() => {
-                                if (confirm('Delete this trade campaign?')) {
-                                  deleteTrade(trade.id);
-                                }
-                              }}
-                              className="p-1.5 rounded text-slate-500 hover:text-rose-400 hover:bg-rose-950/30 transition-colors"
+                              type="button"
+                              onClick={() => setTradeToDelete(trade)}
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-950/30 transition-colors cursor-pointer"
                               title="Delete Trade"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -313,16 +311,16 @@ export const MasterJournal: React.FC = () => {
 
                       {/* Expanded Legs Accordion */}
                       {isExpanded && (
-                        <tr className="bg-[#0b0f16]">
+                        <tr className="bg-slate-50 dark:bg-[#0b0f16]">
                           <td colSpan={8} className="p-4">
                             <div className="space-y-3">
-                              <div className="flex items-center justify-between text-xs border-b border-[#1b2333] pb-2">
-                                <span className="font-bold text-slate-300 flex items-center gap-1.5">
-                                  <Layers className="w-3.5 h-3.5 text-amber-400" />
+                              <div className="flex items-center justify-between text-xs border-b border-slate-200 dark:border-[#1b2333] pb-2">
+                                <span className="font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                                  <Layers className="w-3.5 h-3.5 text-amber-500 dark:text-amber-400" />
                                   Multi-Leg Order Tickets for Campaign #{trade.id.slice(-6)}
                                 </span>
                                 {trade.notes && (
-                                  <span className="text-slate-400 italic max-w-lg truncate">
+                                  <span className="text-slate-600 dark:text-slate-300 italic max-w-lg truncate">
                                     "{trade.notes}"
                                   </span>
                                 )}
@@ -332,13 +330,13 @@ export const MasterJournal: React.FC = () => {
                                 {trade.legs.map((leg, idx) => (
                                   <div
                                     key={leg.id}
-                                    className="p-2.5 rounded bg-[#121824] border border-[#1e273a] text-xs space-y-1"
+                                    className="p-2.5 rounded-lg bg-white dark:bg-[#121824] border border-slate-200 dark:border-[#1e273a] text-xs space-y-1 shadow-xs"
                                   >
                                     <div className="flex items-center justify-between">
-                                      <span className="font-bold text-slate-200">
+                                      <span className="font-bold text-slate-900 dark:text-slate-100">
                                         #{idx + 1} {leg.action.replace('_', ' ')}
                                       </span>
-                                      <span className="text-[10px] text-slate-500 font-mono-num">
+                                      <span className="text-[10px] text-slate-600 dark:text-slate-400 font-mono-num font-semibold">
                                         {new Date(leg.executed_at).toLocaleTimeString([], {
                                           hour: '2-digit',
                                           minute: '2-digit',
@@ -346,15 +344,15 @@ export const MasterJournal: React.FC = () => {
                                       </span>
                                     </div>
                                     <div className="flex items-center justify-between font-mono-num text-[11px]">
-                                      <span className="text-slate-400">
+                                      <span className="text-slate-700 dark:text-slate-300 font-semibold">
                                         {leg.lot_size} Lots @ ${leg.price.toFixed(2)}
                                       </span>
                                       {leg.realized_pnl !== 0 && (
                                         <span
                                           className={`font-bold ${
                                             leg.realized_pnl > 0
-                                              ? 'text-emerald-400'
-                                              : 'text-rose-400'
+                                              ? 'text-emerald-600 dark:text-emerald-400'
+                                              : 'text-rose-600 dark:text-rose-400'
                                           }`}
                                         >
                                           {leg.realized_pnl > 0 ? '+' : ''}${leg.realized_pnl.toFixed(2)}
@@ -362,7 +360,7 @@ export const MasterJournal: React.FC = () => {
                                       )}
                                     </div>
                                     {leg.notes && (
-                                      <span className="text-[10px] text-slate-400 block truncate">
+                                      <span className="text-[10px] text-slate-600 dark:text-slate-400 block truncate">
                                         {leg.notes}
                                       </span>
                                     )}
@@ -403,6 +401,71 @@ export const MasterJournal: React.FC = () => {
             >
               ✕
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {tradeToDelete && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#0f141e] border border-slate-200 dark:border-[#222e44] rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-rose-50 dark:bg-rose-950/80 border border-rose-200 dark:border-rose-500/30 flex items-center justify-center shrink-0 text-rose-600 dark:text-rose-400">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">Delete Trade Campaign</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">This action cannot be undone.</p>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-[#141a27] border border-slate-200 dark:border-[#222d42] text-xs space-y-1.5 shadow-xs">
+              <div className="flex items-center justify-between font-bold">
+                <span className="text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                  <span className={`px-1.5 py-0.2 rounded text-[10px] ${
+                    tradeToDelete.direction === 'BUY'
+                      ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
+                      : 'bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300'
+                  }`}>
+                    {tradeToDelete.direction}
+                  </span>
+                  <span>{tradeToDelete.symbol}</span>
+                </span>
+                <span className={`font-mono-num font-bold text-sm ${
+                  tradeToDelete.realized_pnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
+                }`}>
+                  {tradeToDelete.realized_pnl >= 0 ? '+' : ''}${tradeToDelete.realized_pnl.toFixed(2)}
+                </span>
+              </div>
+              <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center justify-between pt-1 border-t border-slate-200 dark:border-slate-800">
+                <span>Account: {getAccountName(tradeToDelete.account_id)}</span>
+                <span className="font-mono-num">{tradeToDelete.legs.length} {tradeToDelete.legs.length === 1 ? 'Leg' : 'Legs'} ({tradeToDelete.initial_planned_lots} lots)</span>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              Are you sure you want to permanently delete this trade? It will be removed from your Master Journal and all performance intelligence analytics and drawdown watermarks will automatically resynchronize.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setTradeToDelete(null)}
+                className="px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  deleteTrade(tradeToDelete.id);
+                  setTradeToDelete(null);
+                }}
+                className="px-4 py-2 rounded-lg bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold shadow-lg shadow-rose-600/30 transition-all cursor-pointer"
+              >
+                Delete Campaign
+              </button>
+            </div>
           </div>
         </div>
       )}
